@@ -98,8 +98,23 @@ st.caption("Parses unstructured chats into structured order data and ready-to-pr
 # Sidebar for Setup
 with st.sidebar:
     st.header("⚙️ Configuration")
-    api_key = st.secrets.get("GEMINI_API_KEY", "")
+    # Safely load from secrets if present, otherwise default to empty string
+    default_key = ""
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            default_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
+
+    # Sidebar input so anyone without secrets.toml can paste their key
+    api_key = st.text_input(
+        "Gemini API Key",
+        value=default_key,
+        type="password",
+        help="Get a free key from https://aistudio.google.com"
+    )
     st.markdown("Get your key at [Google AI Studio](https://aistudio.google.com/).")
+
     order_id_input = st.text_input("Order Reference #:", value="1001")
 
 # Main Interface Split into Two Columns
@@ -120,7 +135,10 @@ with col_output:
     
     # The API will ONLY run when you actually click the button:
     if process_btn:
-        if not raw_message.strip():
+           # The API will ONLY run when you actually click the button:
+        if not api_key:
+            st.error("⚠️ Please enter a Gemini API Key in the sidebar to proceed.")
+        elif not raw_message.strip():
             st.warning("Please paste or type an order message first!")
         else:
             with st.spinner("Analyzing message with AI..."):
