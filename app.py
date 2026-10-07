@@ -8,10 +8,8 @@ from typing import List
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-# --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="OrderFlow AI", page_icon="📦", layout="wide")
 
-# --- DATA SCHEMA FOR STRUCTURED OUTPUT ---
 class OrderItem(BaseModel):
     item_name: str = Field(description="Name or description of the product ordered")
     quantity: int = Field(description="Quantity ordered", default=1)
@@ -25,14 +23,11 @@ class ExtractedOrder(BaseModel):
     payment_method: str = Field(description="COD, Bank Transfer, JazzCash, etc.", default="COD")
     notes: str = Field(description="Delivery landmarks or special requests", default="None")
 
-# --- PDF GENERATOR ENGINE ---
-# Helper to strip emojis and non-standard symbols that crash PDF generation
 def clean_text(text) -> str:
     if not text:
         return ""
     return str(text).encode("ascii", "ignore").decode("ascii").strip()
 
-# --- PDF GENERATOR ENGINE ---
 def create_pdf_invoice(order_data: dict, order_id: str = "1001") -> bytes:
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
@@ -91,22 +86,17 @@ def create_pdf_invoice(order_data: dict, order_id: str = "1001") -> bytes:
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- USER INTERFACE ---
 st.title("📦 WhatsApp Order-to-Invoice Automation Engine")
 st.caption("Parses unstructured chats into structured order data and ready-to-print dispatch labels.")
 
-# Sidebar for Setup
 with st.sidebar:
     st.header("⚙️ Configuration")
-    # Safely load from secrets if present, otherwise default to empty string
     default_key = ""
     try:
         if "GEMINI_API_KEY" in st.secrets:
             default_key = st.secrets["GEMINI_API_KEY"]
     except Exception:
         pass
-
-    # Sidebar input so anyone without secrets.toml can paste their key
     api_key = st.text_input(
         "Gemini API Key",
         value=default_key,
@@ -117,12 +107,10 @@ with st.sidebar:
 
     order_id_input = st.text_input("Order Reference #:", value="1001")
 
-# Main Interface Split into Two Columns
 col_input, col_output = st.columns([1, 1], gap="medium")
 
 with col_input:
     st.subheader("1. Raw Chat Message")
-        # Replaces default_text with a clean placeholder so the box starts empty
     raw_message = st.text_area(
         "Paste unstructured text / WhatsApp message:",
         placeholder="Paste your WhatsApp order message here...",
@@ -133,9 +121,7 @@ with col_input:
 with col_output:
     st.subheader("2. Structured Order & Receipt")
     
-    # The API will ONLY run when you actually click the button:
     if process_btn:
-           # The API will ONLY run when you actually click the button:
         if not api_key:
             st.error("⚠️ Please enter a Gemini API Key in the sidebar to proceed.")
         elif not raw_message.strip():
@@ -172,17 +158,13 @@ with col_output:
                             break
     if "parsed_order" in st.session_state:
         order = st.session_state["parsed_order"]
-        
-        # Display extracted fields cleanly
+
         st.markdown(f"**Customer:** {order.get('customer_name')}")
         st.markdown(f"**Phone:** {order.get('phone_number')}")
         st.markdown(f"**Address:** {order.get('delivery_address')}")
         st.markdown(f"**Payment:** {order.get('payment_method')}")
-        
-        # Display items table
+
         st.table(order.get("items", []))
-        
-        # Generate and provide download button for PDF
         pdf_data = create_pdf_invoice(order, order_id=order_id_input)
         st.download_button(
             label="📄 Download Ready-to-Print Invoice (PDF)",
